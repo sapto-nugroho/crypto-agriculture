@@ -9,12 +9,14 @@ Implementasi Hybrid Encryption (RSA-OAEP + AES-GCM) dan (ECDH + HKDF + AES-GCM)
 ```
 smart_agriculture/
 ├── crypto_utils.py       # Generate RSA & ECC key pair
-├── sensor.py   # Simulasi data sensor (JSON)
-├── gateway.py       # Enkripsi + pengiriman ke server
+├── sensor.py             # Simulasi data sensor (JSON) generate secara random
+├── gateway.py            # Enkripsi + pengiriman ke server
 ├── server.py             # Terima, simpan, dan dekripsi ciphertext
 ├── experiment.py         # Eksperimen kinerja (30 runs)
 ├── security_analysis.py  # Analisis IND-CPA & IND-CCA
-├── requirements.txt
+├── verify_integrity.py   # membandingkan data asli sensor dengan hasil dekripsi server untuk membuktikan data tidak berubah
+├── decrypt_storage.py    # Dekripsi file pada folder server_storage
+├── requirements.txt      # versi package/library
 ├── keys/                 # Key pair (JANGAN di-commit ke repo publik)
 ├── server_storage/       # Ciphertext yang diterima server
 └── gateway_buffer/       # Buffer ciphertext saat server mati
@@ -89,6 +91,20 @@ python security_analysis.py
 7. Cek statistik:
    - Gateway: `http://localhost:5001/stats`
    - Server: `http://localhost:5002/stats`
+
+---
+
+## Dekripsi file pada folder server_storage
+
+### Langsung semua file
+```bash
+python decrypt_storage.py 
+```
+
+### satu file
+```bash
+python decrypt_storage.py server_storage/packet_1234567.json
+```
 
 ---
 
