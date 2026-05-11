@@ -1,0 +1,17 @@
+# KUNCI PRIVAT — JANGAN PERNAH DI-COMMIT
+keys/
+
+# Output eksperimen (opsional, bisa di-commit jika ingin)
+# experiment_results.csv
+# throughput_results.csv
+
+# Storage runtime
+server_storage/
+gateway_buffer/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.env
+venv/
