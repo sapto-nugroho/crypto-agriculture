@@ -49,16 +49,16 @@ python server.py
 
 **Terminal 2 — Edge Gateway:**
 ```bash
-python edge_gateway.py
+python gateway.py
 ```
 
 **Terminal 3 — Sensor Simulator:**
 ```bash
-python sensor_simulator.py
+python sensor.py
 ```
 
 ### Mengganti Mode (RSA / ECC)
-Edit baris berikut di `sensor_simulator.py`:
+Edit baris berikut di `sensor.py`:
 ```python
 MODE = "ECC"   # atau "RSA"
 ```
@@ -148,10 +148,10 @@ Paket = (mode, epk, nonce, CM, tag)
 
 ---
 
-## Anggota Kelompok
+<!-- ## Anggota Kelompok
 
 | Mahasiswa | Fokus |
 |-----------|-------|
 | Mahasiswa 1 | RSA-OAEP + Analisis IND-CPA |
 | Mahasiswa 2 | ECC (ECDH/HKDF) + Hybrid Encryption |
-| Mahasiswa 3 | AES-GCM + Integrity + Availability |
+| Mahasiswa 3 | AES-GCM + Integrity + Availability | -->
