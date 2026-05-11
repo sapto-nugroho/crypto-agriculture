@@ -26,7 +26,7 @@ smart_agriculture/
 
 ```bash
 python -m venv venv #buat virtual env
-source source venv/scripts/activate
+source venv/scripts/activate #aktivasi virtual env dulu
 pip install -r requirements.txt
 ```
 
