@@ -25,9 +25,10 @@ smart_agriculture/
 ## Instalasi
 
 ```bash
+#pakai bash
 python -m venv venv #buat virtual env
 source venv/scripts/activate #aktivasi virtual env dulu
-pip install -r requirements.txt
+pip install -r requirements.txt #install packages
 ```
 
 ---
