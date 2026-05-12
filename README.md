@@ -7,7 +7,7 @@ Implementasi Hybrid Encryption (RSA-OAEP + AES-GCM) dan (ECDH + HKDF + AES-GCM)
 ## Struktur Folder
 
 ```
-smart_agriculture/
+crypto agriculture/
 ├── crypto_utils.py       # Generate RSA & ECC key pair
 ├── sensor.py             # Simulasi data sensor (JSON) generate secara random
 ├── gateway.py            # Enkripsi + pengiriman ke server
