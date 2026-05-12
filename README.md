@@ -1,4 +1,4 @@
-# Smart Agriculture Monitoring — Sistem Kriptografi
+# Crypto Agriculture Monitoring — Sistem Kriptografi
 **Tugas Proyek Akhir Kriptologi**  
 Implementasi Hybrid Encryption (RSA-OAEP + AES-GCM) dan (ECDH + HKDF + AES-GCM)
 
