@@ -46,6 +46,6 @@ def decrypt(key, nonce_decrypt, ciphertext_decrypt, tag_decrypt):
     tag = bytes.fromhex(tag_decrypt)
     aesgcm = AESGCM(key)
     #Di dalam dekripsi ada verifikasi tag
-    #Kalau tag tidak valid, nanti InvalidTag (oh god, wait a minute...)
+    #Kalau tag tidak valid, nanti InvalidTag, jadi plaintext tidak dikeluarkan
     plaintext = aesgcm.decrypt(nonce, ciphertext + tag, None)
     return plaintext
