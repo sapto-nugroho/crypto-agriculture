@@ -1,0 +1,29 @@
+#ya Allah mau seblak
+
+import os
+import base64
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+from cryptography.exceptions import InvalidTag
+
+#Buat kunci secara random
+#32 bytes = AES-256 bit
+key = os.urandom(32)
+
+#Iseng aja mau print hasil key randomnya mwehehe
+print(key.hex())
+
+#2 task AES-GCM:
+#Enkripsi data - supaya plaintext ga bisa dibaca
+#Buat tag - adversary ada ngubah ciphertext di tengah jalan atau engga (Man in The Middle)
+#Karena ada tag, alhasil jadi IND-CCA 
+# IND-CCA: walaupun adversary dikasih fungsi u/ dekrip, tetap ga bisa bedain mana plaintext(?)
+
+#Enkripsi
+def encrypt(key, plaintext):
+    #Number used ONCE, untuk memastikan ciphertext yang dihasil beda2
+    #IND-CPA secure: adversary bingung mana yg plaintext asli
+    #Intinya nanti si nonce ini bakal diconcate (gabung) dengan key
+    #IGO MWOYAAAAA AAAAA
+    nonce = os.urandom(12)
+    aesgcm = AESGCM(key)
+    #Tag: untuk cek apakah data diutak-atik
