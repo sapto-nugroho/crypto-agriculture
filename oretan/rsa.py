@@ -4,7 +4,7 @@ from cryptography.hazmat.primitives import hashes
 
 #Panjang key RSA minimal 2048
 private_key = rsa.generate_private_key(
-    public_exponent = 65537,
+    public_exponent = 65537, #ava ini?
     key_size = 2048
 )
 public_key = private_key.public_key()
