@@ -1,0 +1,3 @@
+mode,size_kb,n_messages,throughput_msg_per_sec
+RSA,1,50,13598.04
+ECC,1,50,5513.41
