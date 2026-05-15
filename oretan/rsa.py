@@ -4,7 +4,7 @@ from cryptography.hazmat.primitives import hashes
 
 #Panjang key RSA minimal 2048
 private_key = rsa.generate_private_key(
-    public_exponent = 65537, #ava ini?
+    public_exponent = 65537, #rumusnya rsa (katanya)
     key_size = 2048
 )
 public_key = private_key.public_key()
@@ -14,7 +14,7 @@ print(f"Key size of RSA: {private_key.key_size} bit")
 #Ngoghey udah 2048 bit
 
 #Enkripsi key AES dengan RSA-OAEP (jesus christ)
-#Kata claude konsepnya pakai random padding (what is f going on rn)
+#Kata claude konsepnya pakai random padding (?)
 #Alhasil nanti hasil enkripsinya beda2 (IND-CPA secure, OH MY GODNESS I'M XOOOO TIRED RN, still in puskot, nevermind)
 #Textbook RSA: deterministik sehingga tidak IND-CPA, imo
 #Astaghfirullahaladzim 33x
