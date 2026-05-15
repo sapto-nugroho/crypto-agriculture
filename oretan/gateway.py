@@ -1,5 +1,6 @@
 import json
 import os
+import time
 import random
 from pathlib import Path
 from sensor import data, data_json
@@ -9,34 +10,30 @@ from ecc import derive_session_key, public_key_to_bytes, public_key_from_bytes, 
 from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PrivateKey
 
 #Kalau server mati, gateway nyimpan ciphertext ke file lokal sementara (buffer)
-buffer_file = "local_buffer.json"
+buffer_dir = "gateway_buffer"
+os.makedirs(buffer_dir, exist_ok=True)
 
 def save_to_buffer(packet):
-    #Load buffer yang ada terlebih dahulu
-    if Path(buffer_file).exists():
-        with open(buffer_file,"r") as f:
-            buffer = json.load(f)
-    #Kalo ga ada buffernya, dibuat
-    else:
-        buffer = []
-    buffer.append(packet)
-    with open(buffer_file, "w") as f:
-        json.dump(buffer, f, indent=2)
-    print(f"Server mati, data disimpan ke buffer lokal ({len(buffer)} data)")
+    #Setiap buffer disimpan dalam file json masing2
+    filename = os.path.join(buffer_dir, f"packet_{int(time.time()*1000)}.json")
+    with open(filename, "w") as f:
+        json.dump(packet, f, indent=2)
+    total = len(os.listdir(buffer_dir))
+    print(f"Server mati, data disimpan ke buffer lokal ({total} data)")
 
 def flush_buffer(server):
-    #Kirim ulang semua data di buffer ke server
-    if not Path(buffer_file).exists():
+    files = sorted(os.listdir(buffer_dir))
+    if not files:
         return
-    with open(buffer_file, "r") as f:
-        buffer = json.load(f)
-    if buffer:
-        print(f"Mengirim ulang {len(buffer)} data dari buffer")
-        for packet in buffer:
-            server.receive(packet)
-        #Hapus buffer setelah terkirim
-        os.remove(buffer_file)
-        print("Buffer berhasil dikirim")
+    print(f"Mengirim ulang {len(files)} data dari buffer")
+    for fname in files:
+        fpath = os.path.join(buffer_dir, fname)
+        with open(fpath, "r") as f:
+            packet = json.load(f)
+        server.receive(packet)
+        #Hapus file setelah terkirim
+        os.remove(fpath)
+    print("Buffer berhasil dikirim")
 
 #Enkripsi RSA
 def encrypt_rsa(data_json, rsa_public_key):
