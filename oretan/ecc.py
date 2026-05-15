@@ -6,7 +6,7 @@ from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PrivateKey, X
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 
-#Pasangan kunci ECC
+#Pasangan kunci ECC, dipakai di gateway
 server_private_key = X25519PrivateKey.generate()
 server_public_key = server_private_key.public_key()
 
@@ -38,14 +38,15 @@ def derive_session_key(private_key, peer_public_key):
     ).derive(shared_secret)
     return session_key
 
-#Ephemeral key
-ephemeral_private = X25519PrivateKey.generate()
-ephemeral_public = ephemeral_private.public_key()
-session_key_gateway = derive_session_key(ephemeral_private, server_public_key)
-ephemeral_public_bytes = public_key_to_bytes(ephemeral_public)
-ephemeral_public_recovered = public_key_from_bytes(ephemeral_public_bytes)
-session_key_server = derive_session_key(server_private_key, ephemeral_public_recovered)
+#Ephemeral key, ini testing aja, nanti di gateway dibuat baru
+if __name__ == "__main__":
+    ephemeral_private = X25519PrivateKey.generate()
+    ephemeral_public = ephemeral_private.public_key()
+    session_key_gateway = derive_session_key(ephemeral_private, server_public_key)
+    ephemeral_public_bytes = public_key_to_bytes(ephemeral_public)
+    ephemeral_public_recovered = public_key_from_bytes(ephemeral_public_bytes)
+    session_key_server = derive_session_key(server_private_key, ephemeral_public_recovered)
 
-#Cek sama atau engga untuk verifikasi session key
-print(f"Session key sama: {session_key_gateway == session_key_server} ✅")
-print(f"Panjang kunci: {len(session_key_gateway) * 8} bit")
+    #Cek sama atau engga untuk verifikasi session key
+    print(f"Session key sama: {session_key_gateway == session_key_server} ✅")
+    print(f"Panjang kunci: {len(session_key_gateway) * 8} bit")

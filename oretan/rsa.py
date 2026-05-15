@@ -9,10 +9,6 @@ private_key = rsa.generate_private_key(
 )
 public_key = private_key.public_key()
 
-#Iseng lagi mau print ukuran kunci
-print(f"Key size of RSA: {private_key.key_size} bit")
-#Ngoghey udah 2048 bit
-
 #Enkripsi key AES dengan RSA-OAEP (jesus christ)
 #Kata claude konsepnya pakai random padding (?)
 #Alhasil nanti hasil enkripsinya beda2 (IND-CPA secure, OH MY GODNESS I'M XOOOO TIRED RN, still in puskot, nevermind)
@@ -42,3 +38,8 @@ def decrypt_session_key(private_key, encrypted_key_hex):
         )
     )
     return session_key
+
+if __name__ == "__main__":
+    #Iseng lagi mau print ukuran kunci (Note: testing aja)
+    print(f"Key size of RSA: {private_key.key_size} bit")
+    #Ngoghey udah 2048 bit

@@ -4,13 +4,6 @@ import os
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.exceptions import InvalidTag
 
-#Buat kunci secara random
-#32 bytes = AES-256 bit
-key = os.urandom(32)
-
-#Iseng aja mau print hasil key randomnya mwehehe
-print(key.hex())
-
 #2 task AES-GCM:
 #Enkripsi data - supaya plaintext ga bisa dibaca
 #Buat tag - u/ cek apakah adversary ada ngubah ciphertext di tengah jalan atau engga (Man in The Middle)
@@ -49,3 +42,10 @@ def decrypt(key, nonce_decrypt, ciphertext_decrypt, tag_decrypt):
     #Kalau tag tidak valid, nanti InvalidTag, jadi plaintext tidak dikeluarkan
     plaintext = aesgcm.decrypt(nonce, ciphertext + tag, None)
     return plaintext
+
+if __name__ == "__main__":
+    #Buat kunci secara random, hanya untuk testing aja, aslinya tetap pakai session key di gateway
+    #32 bytes = AES-256 bit
+    key = os.urandom(32)
+    #Iseng aja mau print hasil key randomnya mwehehe
+    print(key.hex())
