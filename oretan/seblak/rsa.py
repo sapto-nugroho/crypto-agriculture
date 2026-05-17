@@ -1,12 +1,29 @@
 import os
 from cryptography.hazmat.primitives.asymmetric import rsa, padding
-from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives import hashes, serialization
 
 #Panjang key RSA minimal 2048
-private_key = rsa.generate_private_key(
-    public_exponent = 65537, #rumusnya rsa (katanya)
-    key_size = 2048
-)
+#FIX: Keypair disimpan ke file .pem supaya gateway dan server pakai kunci yang SAMA
+#Kalau generate ulang tiap import, gateway enkripsi pakai public key A, server dekripsi pakai private key B -> gagal
+KEY_FILE = "rsa_private_key.pem"
+
+if os.path.exists(KEY_FILE):
+    #Load keypair yang sudah ada
+    with open(KEY_FILE, "rb") as f:
+        private_key = serialization.load_pem_private_key(f.read(), password=None)
+else:
+    #Generate keypair baru, simpan ke file
+    private_key = rsa.generate_private_key(
+        public_exponent = 65537, #rumusnya rsa (katanya)
+        key_size = 2048
+    )
+    with open(KEY_FILE, "wb") as f:
+        f.write(private_key.private_bytes(
+            serialization.Encoding.PEM,
+            serialization.PrivateFormat.TraditionalOpenSSL,
+            serialization.NoEncryption()
+        ))
+
 public_key = private_key.public_key()
 
 #Enkripsi key AES dengan RSA-OAEP (jesus christ)

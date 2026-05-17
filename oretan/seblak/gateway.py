@@ -2,16 +2,24 @@ import json
 import os
 import time
 import random
+import requests
+import threading
 from pathlib import Path
-from sensor import data, data_json
+from flask import Flask, request, jsonify
 from aes import encrypt
 from rsa import encrypt_session_key, private_key, public_key
 from ecc import derive_session_key, public_key_to_bytes, public_key_from_bytes, server_private_key, server_public_key
 from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PrivateKey
 
+app = Flask(__name__)
+
+SERVER_URL = "http://localhost:5002/store"
+
 #Kalau server mati, gateway nyimpan ciphertext ke file lokal sementara (buffer)
 buffer_dir = "gateway_buffer"
 os.makedirs(buffer_dir, exist_ok=True)
+
+stats = {"sent": 0, "buffered": 0, "retry_sent": 0}
 
 def save_to_buffer(packet):
     #Setiap buffer disimpan dalam file json masing2
@@ -21,7 +29,7 @@ def save_to_buffer(packet):
     total = len(os.listdir(buffer_dir))
     print(f"Server mati, data disimpan ke buffer lokal ({total} data)")
 
-def flush_buffer(server):
+def flush_buffer():
     files = sorted(os.listdir(buffer_dir))
     if not files:
         return
@@ -30,9 +38,14 @@ def flush_buffer(server):
         fpath = os.path.join(buffer_dir, fname)
         with open(fpath, "r") as f:
             packet = json.load(f)
-        server.receive(packet)
-        #Hapus file setelah terkirim
-        os.remove(fpath)
+        if send_to_server(packet):
+            #Hapus file setelah terkirim
+            os.remove(fpath)
+            stats["retry_sent"] += 1
+            print(f"  Buffer {fname} berhasil dikirim ulang")
+        else:
+            print(f"  Server masih mati, berhenti sementara")
+            break
     print("Buffer berhasil dikirim")
 
 #Enkripsi RSA
@@ -81,34 +94,59 @@ def encrypt_ecc(data_json, ecc_server_public):
         "tag": aes_result["tag"]
     }
 
-#Kirim ke server
-def send_to_server(server, packet, mode):
-    if server.is_online:
-        server.receive(packet)
-        print(f"[{mode}] Data terkirim ke server")
-        #Kalau ada buffer, kirim juga
-        flush_buffer(server)
+#Kirim ke server via HTTP
+def send_to_server(packet):
+    try:
+        resp = requests.post(SERVER_URL, json=packet, timeout=3)
+        return resp.status_code == 200
+    except Exception:
+        return False
+
+#Retry buffer di background (tiap 5 detik cek buffer)
+def retry_buffer():
+    while True:
+        time.sleep(5)
+        files = sorted(os.listdir(buffer_dir))
+        if files:
+            flush_buffer()
+
+#Endpoint: terima data dari sensor
+@app.route("/receive", methods=["POST"])
+def receive_from_sensor():
+    body        = request.get_json()
+    sensor_data = body["sensor_data"]
+    mode        = body.get("mode", "ECC").upper()
+
+    data_json = json.dumps(sensor_data)
+
+    #Enkripsi sesuai mode
+    if mode == "RSA":
+        packet = encrypt_rsa(data_json, public_key)
     else:
+        packet = encrypt_ecc(data_json, server_public_key)
+
+    #Kirim ke server atau buffer
+    if send_to_server(packet):
+        stats["sent"] += 1
+        print(f"[{mode}] Data terkirim ke server | seq#{sensor_data['sequence_number']}")
+    else:
+        stats["buffered"] += 1
         save_to_buffer(packet)
-#Pakai main supaya ini cuma untuk import fungsi2 rsa, ecc, sama aes tanpa memasukkan hasil testing
+
+    return jsonify({"status": "ok"})
+
+#Endpoint: statistik gateway
+@app.route("/stats", methods=["GET"])
+def get_stats():
+    pending = len(os.listdir(buffer_dir))
+    return jsonify({**stats, "pending_in_buffer": pending})
+
 #Main
 if __name__ == "__main__":
-    # Import server
-    from server import Server
-    server = Server()
-    print("GATEWAY — MODE RSA")
-    packet_rsa = encrypt_rsa(data_json, public_key)
-    print(f"Paket RSA:")
-    print(f"sensor_id: {packet_rsa['sensor_id']}")
-    print(f"mode: {packet_rsa['mode']}")
-    print(f"algorithm: {packet_rsa['algorithm']}")
-    send_to_server(server, packet_rsa, "RSA")
+    #Jalankan retry buffer di background
+    t = threading.Thread(target=retry_buffer, daemon=True)
+    t.start()
 
-    print()
-    print("GATEWAY — MODE ECC")
-    packet_ecc = encrypt_ecc(data_json, server_public_key)
-    print(f"Paket ECC:")
-    print(f"sensor_id: {packet_ecc['sensor_id']}")
-    print(f"mode: {packet_ecc['mode']}")
-    print(f"algorithm: {packet_ecc['algorithm']}")
-    send_to_server(server, packet_ecc, "ECC")
+    print("GATEWAY aktif di port 5001")
+    print(f"Buffer: {buffer_dir}/")
+    app.run(port=5001)

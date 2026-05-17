@@ -7,7 +7,24 @@ from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 
 #Pasangan kunci ECC, dipakai di gateway
-server_private_key = X25519PrivateKey.generate()
+#FIX: Keypair disimpan ke file .pem supaya gateway dan server pakai kunci yang SAMA
+#Kalau generate ulang tiap import, ECDH hasilkan shared secret beda -> session key beda -> AES-GCM InvalidTag
+ECC_KEY_FILE = "ecc_private_key.pem"
+
+if os.path.exists(ECC_KEY_FILE):
+    #Load keypair yang sudah ada
+    with open(ECC_KEY_FILE, "rb") as f:
+        server_private_key = serialization.load_pem_private_key(f.read(), password=None)
+else:
+    #Generate keypair baru, simpan ke file
+    server_private_key = X25519PrivateKey.generate()
+    with open(ECC_KEY_FILE, "wb") as f:
+        f.write(server_private_key.private_bytes(
+            serialization.Encoding.PEM,
+            serialization.PrivateFormat.PKCS8,
+            serialization.NoEncryption()
+        ))
+
 server_public_key = server_private_key.public_key()
 
 #Serialisasi public key ke bytes supaya bisa dikirim ke server
