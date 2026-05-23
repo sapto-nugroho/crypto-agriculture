@@ -1,0 +1,7 @@
+mode,size_kb,throughput_msg_per_sec,total_success,total_error,duration_sec
+RSA,1,0.3,3,0,10
+RSA,10,0.3,3,0,10
+RSA,100,0.3,3,0,10
+ECC,1,0.3,3,0,10
+ECC,10,0.3,3,0,10
+ECC,100,0.3,3,0,10

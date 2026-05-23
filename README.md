@@ -1,25 +1,52 @@
-# Crypto Agriculture Monitoring — Sistem Kriptografi
-**Tugas Proyek Akhir Kriptologi**  
-Implementasi Hybrid Encryption (RSA-OAEP + AES-GCM) dan (ECDH + HKDF + AES-GCM)
+# Smart Agriculture Monitoring — Sistem Kriptografi
+**Tugas Proyek Akhir Kriptologi**
+Implementasi Hybrid Encryption: RSA-OAEP + AES-GCM dan X25519-HKDF + AES-GCM
+
+---
+
+## Arsitektur Sistem
+
+```
+Sensor Simulator → Edge Gateway → Server
+                        ↕
+                  gateway_buffer/  (saat server mati)
+```
+
+### Alur Key Distribution (Lebih Realistis)
+
+```
+1. Server start → generate RSA & ECC keys → simpan di keys/
+2. Server expose public key via:
+     GET /public-key/rsa
+     GET /public-key/ecc
+3. Gateway start → fetch public key dari server → simpan di gateway_keys/
+4. Gateway gunakan public key untuk enkripsi
+5. Server gunakan private key untuk dekripsi
+```
+
+Private key **tidak pernah meninggalkan server**.
 
 ---
 
 ## Struktur Folder
 
 ```
-crypto agriculture/
-├── crypto_utils.py       # Generate RSA & ECC key pair
-├── sensor.py             # Simulasi data sensor (JSON) generate secara random
-├── gateway.py            # Enkripsi + pengiriman ke server
-├── server.py             # Terima, simpan, dan dekripsi ciphertext
-├── experiment.py         # Eksperimen kinerja (30 runs)
+smart_agriculture/
+├── server.py             # Server: generate key, expose public key, dekripsi
+├── gateway.py       # Gateway: fetch key, enkripsi, buffer
+├── sensor.py   # Sensor: generate & kirim data JSON
+├── experiment.py         # Eksperimen kinerja end-to-end
 ├── security_analysis.py  # Analisis IND-CPA & IND-CCA
-├── verify_integrity.py   # membandingkan data asli sensor dengan hasil dekripsi server untuk membuktikan data tidak berubah
-├── decrypt_storage.py    # Dekripsi file pada folder server_storage
-├── requirements.txt      # versi package/library
-├── keys/                 # Key pair (JANGAN di-commit ke repo publik)
-├── server_storage/       # Ciphertext yang diterima server
-└── gateway_buffer/       # Buffer ciphertext saat server mati
+├── decrypt_storage.py    # Dekripsi manual server_storage/
+├── verify_integrity.py   # Cocokkan sensor_logs/ vs server_storage/
+├── requirements.txt
+├── .gitignore
+├── keys/                 # Private key server (auto-generate, JANGAN commit)
+├── gateway_keys/         # Public key hasil fetch (auto-fetch)
+├── server_storage/       # Ciphertext diterima server (runtime)
+├── gateway_buffer/       # Buffer ciphertext saat server mati (runtime)
+├── sensor_logs/          # Log plaintext sensor harian (runtime)
+└── decrypted_output/     # Hasil dekripsi manual (runtime)
 ```
 
 ---
@@ -37,73 +64,44 @@ pip install -r requirements.txt #install packages
 
 ## Cara Menjalankan
 
-### Langkah 1 — Generate Key (hanya sekali)
-```bash
-python crypto_utils.py
-```
+### Urutan WAJIB diikuti:
 
-### Langkah 2 — Jalankan di 3 terminal terpisah
-
-**Terminal 1 — Server:**
+**Terminal 1 — Server (jalankan PERTAMA):**
 ```bash
 python server.py
 ```
+Server akan otomatis generate key RSA & ECC saat pertama kali dijalankan.
 
-**Terminal 2 — Edge Gateway:**
+**Terminal 2 — Gateway (jalankan SETELAH server):**
 ```bash
 python gateway.py
 ```
+Gateway akan otomatis fetch public key dari server.
 
-**Terminal 3 — Sensor Simulator:**
+**Terminal 3 — Sensor:**
 ```bash
 python sensor.py
 ```
 
-### Mengganti Mode (RSA / ECC)
-Edit baris berikut di `sensor.py`:
+### Mengganti Mode:
+Edit `sensor.py`:
 ```python
 MODE = "ECC"   # atau "RSA"
 ```
 
 ---
 
-## Cara Menjalankan Eksperimen
+## Eksperimen
 
 ```bash
-# Eksperimen kinerja (enkripsi/dekripsi/throughput)
-python experiment.py
-# Output: experiment_results.csv, throughput_results.csv
-
-# Analisis keamanan IND-CPA & IND-CCA
-python security_analysis.py
-```
-
----
-
-## Eksperimen Availability (Local Buffering)
-
-1. Jalankan server, gateway, dan sensor simulator
-2. Biarkan berjalan 30 detik (data langsung terkirim)
-3. **Stop server** (Ctrl+C di terminal server)
-4. Biarkan berjalan 30 detik (data masuk buffer)
-5. **Jalankan kembali** server
-6. Gateway otomatis mengirim ulang buffer
-7. Cek statistik:
-   - Gateway: `http://localhost:5001/stats`
-   - Server: `http://localhost:5002/stats`
-
----
-
-## Dekripsi file pada folder server_storage
-
-### Langsung semua file
-```bash
-python decrypt_storage.py 
-```
-
-### satu file
-```bash
-python decrypt_storage.py server_storage/packet_1234567.json
+# Terminal 1: python server.py
+# Terminal 2: python gateway.py
+# Terminal 3:
+python experiment.py         # kinerja end-to-end (~10 menit)
+python security_analysis.py  # IND-CPA & IND-CCA
+python verify_integrity.py   # cocokkan historis
+python decrypt_storage.py    # dekripsi manual semua file
+python decrypt_storage.py server_storage/packet_xxx.json  # satu file
 ```
 
 ---
@@ -112,24 +110,33 @@ python decrypt_storage.py server_storage/packet_1234567.json
 
 ### RSA Mode
 ```
-Session Key K ← random(256 bit)
+K  ← random(256-bit)
 CK = RSA-OAEP(pkServer, K)
 CM, tag = AES-256-GCM(K, nonce, M)
-Paket = (mode, CK, nonce, CM, tag)
+Paket = (CK, nonce, CM, tag)
 ```
 
-### ECC Mode
+### ECC Mode (X25519)
 ```
-(epk, esk) ← ECC.generate_ephemeral()
-S = ECDH(esk, pkServer)
-K = HKDF-SHA256(S)
+(epk, esk) ← X25519.generate()
+S  = X25519(esk, pkServer)
+K  = HKDF-SHA256(S)
 CM, tag = AES-256-GCM(K, nonce, M)
-Paket = (mode, epk, nonce, CM, tag)
+Paket = (epk, nonce, CM, tag)
 ```
 
 ---
 
-## Requirements yang Dipenuhi
+## Requirements Terpenuhi
+
+| Kode | Status |
+|------|--------|
+| REQ-F1 ~ REQ-F7 | ✓ |
+| REQ-S1 ~ REQ-S5 | ✓ |
+| REQ-R1 ~ REQ-R6 | ✓ |
+| REQ-E1 ~ REQ-E7 | ✓ |
+| REQ-A1 ~ REQ-A4 | ✓ |
+
 
 | Kode | Status | Deskripsi |
 |------|--------|-----------|
@@ -163,11 +170,3 @@ Paket = (mode, epk, nonce, CM, tag)
 | REQ-A4 | ✓ | Laporan: sent, buffered, retry_sent |
 
 ---
-
-<!-- ## Anggota Kelompok
-
-| Mahasiswa | Fokus |
-|-----------|-------|
-| Mahasiswa 1 | RSA-OAEP + Analisis IND-CPA |
-| Mahasiswa 2 | ECC (ECDH/HKDF) + Hybrid Encryption |
-| Mahasiswa 3 | AES-GCM + Integrity + Availability | -->
