@@ -33,8 +33,8 @@ Private key **tidak pernah meninggalkan server**.
 ```
 smart_agriculture/
 ├── server.py             # Server: generate key, expose public key, dekripsi
-├── gateway.py       # Gateway: fetch key, enkripsi, buffer
-├── sensor.py   # Sensor: generate & kirim data JSON
+├── gateway.py            # Gateway: fetch key, enkripsi, buffer
+├── sensor.py             # Sensor: generate & kirim data JSON
 ├── experiment.py         # Eksperimen kinerja end-to-end
 ├── security_analysis.py  # Analisis IND-CPA & IND-CCA
 ├── decrypt_storage.py    # Dekripsi manual server_storage/
