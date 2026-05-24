@@ -11,7 +11,7 @@ import json
 import os
 
 # Import fungsi dari experiment.py
-from experiment import (
+from old.experiment import (
     encrypt_rsa, decrypt_rsa,
     encrypt_ecc, decrypt_ecc,
     generate_payload

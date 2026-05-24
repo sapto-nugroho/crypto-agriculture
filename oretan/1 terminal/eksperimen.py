@@ -129,8 +129,8 @@ def run_throughput(mode, size_kb=1, n=50):
 # EKSPERIMEN 3: AVAILABILITY
 # ─────────────────────────────────────────────────────────────
 def run_availability():
-    from server import Server
-    from gateway import send_to_server
+    from old.server import Server
+    from old.gateway import send_to_server
 
     print("\n" + "=" * 50)
     print("  EKSPERIMEN AVAILABILITY — LOCAL BUFFERING")

@@ -47,7 +47,7 @@ class Server:
         print(f"Server: {status} | Data tersimpan: {len(self.storage)} paket")
 
 if __name__ == "__main__":
-    from gateway import encrypt_rsa, encrypt_ecc, send_to_server, data_json
+    from old.gateway import encrypt_rsa, encrypt_ecc, send_to_server, data_json
     from rsa import public_key
     from ecc import server_public_key
     server = Server()

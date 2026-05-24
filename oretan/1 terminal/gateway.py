@@ -3,7 +3,7 @@ import os
 import time
 import random
 from pathlib import Path
-from sensor import data, data_json
+from old.sensor import data, data_json
 from aes import encrypt
 from rsa import encrypt_session_key, private_key, public_key
 from ecc import derive_session_key, public_key_to_bytes, public_key_from_bytes, server_private_key, server_public_key
@@ -94,7 +94,7 @@ def send_to_server(server, packet, mode):
 #Main
 if __name__ == "__main__":
     # Import server
-    from server import Server
+    from old.server import Server
     server = Server()
     print("GATEWAY — MODE RSA")
     packet_rsa = encrypt_rsa(data_json, public_key)
