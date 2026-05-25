@@ -1,0 +1,911 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Agriculture — Crypto Dashboard</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <style>
+    /* ── Reset & Base ─────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0f1117;
+      --surface:   #1a1d27;
+      --surface2:  #21253a;
+      --border:    #2e3250;
+      --text:      #e2e8f0;
+      --muted:     #8892b0;
+      --green:     #10b981;
+      --red:       #ef4444;
+      --yellow:    #f59e0b;
+      --blue:      #3b82f6;
+      --purple:    #8b5cf6;
+      --cyan:      #06b6d4;
+      --orange:    #f97316;
+      --radius:    12px;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      font-size: 14px;
+      min-height: 100vh;
+    }
+
+    /* ── Header ──────────────────────────────────────── */
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .header-left { display: flex; align-items: center; gap: 12px; }
+
+    .logo {
+      width: 36px; height: 36px;
+      background: linear-gradient(135deg, var(--green), var(--cyan));
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+    }
+
+    header h1 { font-size: 18px; font-weight: 700; }
+    header p  { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+    .header-right { display: flex; align-items: center; gap: 16px; }
+
+    .server-badge {
+      display: flex; align-items: center; gap: 6px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 6px 14px;
+      font-size: 13px;
+    }
+
+    .dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 6px var(--green);
+      animation: pulse 2s infinite;
+    }
+
+    .dot.offline { background: var(--red); box-shadow: 0 0 6px var(--red); animation: none; }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.4; }
+    }
+
+    #uptime { font-size: 12px; color: var(--muted); font-family: monospace; }
+
+    /* ── Layout ──────────────────────────────────────── */
+    .container { padding: 24px; max-width: 1400px; margin: 0 auto; }
+
+    .grid-4 {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    /* ── Card ────────────────────────────────────────── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+    }
+
+    .card-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .card-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* ── Stat Card ───────────────────────────────────── */
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+    }
+
+    .stat-card.green::before  { background: var(--green); }
+    .stat-card.blue::before   { background: var(--blue); }
+    .stat-card.yellow::before { background: var(--yellow); }
+    .stat-card.red::before    { background: var(--red); }
+
+    .stat-icon {
+      font-size: 24px; margin-bottom: 12px;
+    }
+
+    .stat-label {
+      font-size: 12px; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 0.5px;
+      margin-bottom: 6px;
+    }
+
+    .stat-value {
+      font-size: 32px; font-weight: 700;
+      font-family: monospace; line-height: 1;
+    }
+
+    .stat-card.green  .stat-value { color: var(--green); }
+    .stat-card.blue   .stat-value { color: var(--blue); }
+    .stat-card.yellow .stat-value { color: var(--yellow); }
+    .stat-card.red    .stat-value { color: var(--red); }
+
+    .stat-sub { font-size: 11px; color: var(--muted); margin-top: 8px; }
+
+    /* ── Sensor Cards ────────────────────────────────── */
+    .sensor-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .sensor-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      text-align: center;
+    }
+
+    .sensor-icon { font-size: 28px; margin-bottom: 8px; }
+    .sensor-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+    .sensor-value { font-size: 28px; font-weight: 700; font-family: monospace; margin: 4px 0; }
+    .sensor-unit  { font-size: 12px; color: var(--muted); }
+
+    /* ── Badge ───────────────────────────────────────── */
+    .badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 3px 10px; border-radius: 20px;
+      font-size: 11px; font-weight: 600;
+    }
+
+    .badge-green  { background: rgba(16,185,129,0.15); color: var(--green); border: 1px solid rgba(16,185,129,0.3); }
+    .badge-blue   { background: rgba(59,130,246,0.15); color: var(--blue);  border: 1px solid rgba(59,130,246,0.3); }
+    .badge-red    { background: rgba(239,68,68,0.15);  color: var(--red);   border: 1px solid rgba(239,68,68,0.3); }
+    .badge-yellow { background: rgba(245,158,11,0.15); color: var(--yellow);border: 1px solid rgba(245,158,11,0.3); }
+    .badge-purple { background: rgba(139,92,246,0.15); color: var(--purple);border: 1px solid rgba(139,92,246,0.3); }
+
+    /* ── Activity Log ────────────────────────────────── */
+    .log-container {
+      max-height: 340px;
+      overflow-y: auto;
+    }
+
+    .log-container::-webkit-scrollbar { width: 4px; }
+    .log-container::-webkit-scrollbar-track { background: transparent; }
+    .log-container::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    .log-item {
+      display: grid;
+      grid-template-columns: 60px 60px 60px 1fr;
+      gap: 8px;
+      align-items: center;
+      padding: 8px 12px;
+      border-radius: 8px;
+      margin-bottom: 4px;
+      font-size: 12px;
+      font-family: monospace;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      transition: background 0.2s;
+    }
+
+    .log-item:hover { background: #262b40; }
+
+    .log-time  { color: var(--muted); }
+    .log-seq   { color: var(--cyan); }
+
+    .log-detail { color: var(--text); font-size: 11px; }
+
+    /* ── Crypto Info ─────────────────────────────────── */
+    .crypto-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .crypto-item {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 16px;
+    }
+
+    .crypto-label { font-size: 11px; color: var(--muted); margin-bottom: 4px; }
+    .crypto-value { font-size: 13px; font-weight: 600; font-family: monospace; }
+
+    /* ── Mode indicator ──────────────────────────────── */
+    .mode-pill {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 4px 12px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    /* ── Chart container ─────────────────────────────── */
+    .chart-wrap { position: relative; height: 220px; }
+
+    /* ── Empty state ─────────────────────────────────── */
+    .empty-state {
+      text-align: center; padding: 40px;
+      color: var(--muted); font-size: 13px;
+    }
+
+    .empty-state .emoji { font-size: 32px; margin-bottom: 8px; }
+
+    /* ── Mode Toggle ─────────────────────────────────── */
+    .mode-toggle {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 3px;
+      overflow: hidden;
+    }
+
+    .mode-btn {
+      padding: 5px 16px;
+      border-radius: 16px;
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      letter-spacing: 0.3px;
+    }
+
+    .mode-btn:hover {
+      color: var(--text);
+    }
+
+    .mode-btn.active-rsa {
+      background: linear-gradient(135deg, #7c3aed, #8b5cf6);
+      color: white;
+      box-shadow: 0 2px 8px rgba(139,92,246,0.4);
+    }
+
+    .mode-btn.active-ecc {
+      background: linear-gradient(135deg, #1d4ed8, #3b82f6);
+      color: white;
+      box-shadow: 0 2px 8px rgba(59,130,246,0.4);
+    }
+
+    .mode-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .mode-label {
+      font-size: 11px;
+      color: var(--muted);
+      margin-right: 6px;
+    }
+
+    /* Mode history list */
+    .mode-history-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      border-radius: 6px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      font-size: 11px;
+      font-family: monospace;
+      margin-bottom: 4px;
+    }
+
+    .arrow { color: var(--muted); }
+
+    /* ── Footer ──────────────────────────────────────── */
+    footer {
+      text-align: center;
+      padding: 16px;
+      color: var(--muted);
+      font-size: 11px;
+      border-top: 1px solid var(--border);
+      margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Header ────────────────────────────────────────── -->
+<header>
+  <div class="header-left">
+    <div class="logo">🌾</div>
+    <div>
+      <h1>Smart Agriculture Crypto Monitor</h1>
+      <p>Sistem Monitoring Berbasis RSA-OAEP &amp; X25519-HKDF-AES-GCM</p>
+    </div>
+  </div>
+  <div class="header-right">
+    <span id="uptime">00:00:00</span>
+
+    <!-- Mode Toggle -->
+    <div style="display:flex; align-items:center; gap:8px">
+      <span class="mode-label">Mode Enkripsi:</span>
+      <div class="mode-toggle">
+        <button class="mode-btn" id="btn-rsa"
+                onclick="setMode('RSA')">RSA</button>
+        <button class="mode-btn active-ecc" id="btn-ecc"
+                onclick="setMode('ECC')">ECC</button>
+      </div>
+    </div>
+
+    <div class="server-badge">
+      <div class="dot" id="server-dot"></div>
+      <span id="server-status-text">Server Aktif</span>
+    </div>
+  </div>
+</header>
+
+<!-- ── Main Content ──────────────────────────────────── -->
+<div class="container">
+
+  <!-- Stat Cards -->
+  <div class="grid-4">
+    <div class="stat-card green">
+      <div class="stat-icon">📦</div>
+      <div class="stat-label">Data Diterima</div>
+      <div class="stat-value" id="stat-received">0</div>
+      <div class="stat-sub">Total paket berhasil didekripsi</div>
+    </div>
+    <div class="stat-card blue">
+      <div class="stat-icon">💾</div>
+      <div class="stat-label">Ciphertext Tersimpan</div>
+      <div class="stat-value" id="stat-stored">0</div>
+      <div class="stat-sub">File di server_storage/</div>
+    </div>
+    <div class="stat-card yellow">
+      <div class="stat-icon">⚠️</div>
+      <div class="stat-label">Gagal Dekripsi</div>
+      <div class="stat-value" id="stat-failed">0</div>
+      <div class="stat-sub">Error saat dekripsi</div>
+    </div>
+    <div class="stat-card red">
+      <div class="stat-icon">🚫</div>
+      <div class="stat-label">Ciphertext Ditolak</div>
+      <div class="stat-value" id="stat-rejected">0</div>
+      <div class="stat-sub">Tag autentikasi tidak valid</div>
+    </div>
+  </div>
+
+  <!-- Sensor Values -->
+  <div class="sensor-grid">
+    <div class="sensor-card">
+      <div class="sensor-icon">🌡️</div>
+      <div class="sensor-label">Temperature</div>
+      <div class="sensor-value" id="avg-temp">—</div>
+      <div class="sensor-unit">°C (rata-rata)</div>
+    </div>
+    <div class="sensor-card">
+      <div class="sensor-icon">💧</div>
+      <div class="sensor-label">Air Humidity</div>
+      <div class="sensor-value" id="avg-humidity">—</div>
+      <div class="sensor-unit">% (rata-rata)</div>
+    </div>
+    <div class="sensor-card">
+      <div class="sensor-icon">🌱</div>
+      <div class="sensor-label">Soil Moisture</div>
+      <div class="sensor-value" id="avg-moisture">—</div>
+      <div class="sensor-unit">% (rata-rata)</div>
+    </div>
+    <div class="sensor-card">
+      <div class="sensor-icon">⚗️</div>
+      <div class="sensor-label">Soil pH</div>
+      <div class="sensor-value" id="avg-ph">—</div>
+      <div class="sensor-unit">pH (rata-rata)</div>
+    </div>
+  </div>
+
+  <!-- Mode aktif banner -->
+  <div id="mode-banner"
+       style="background:var(--surface); border:1px solid var(--border);
+              border-radius:var(--radius); padding:14px 20px;
+              margin-bottom:24px; display:flex;
+              align-items:center; justify-content:space-between">
+    <div style="display:flex; align-items:center; gap:12px">
+      <span style="font-size:18px">🔑</span>
+      <div>
+        <div style="font-size:11px; color:var(--muted);
+                    text-transform:uppercase; letter-spacing:0.5px">
+          Mode Enkripsi Aktif
+        </div>
+        <div style="display:flex; align-items:center; gap:8px; margin-top:4px">
+          <span id="active-mode-text"
+                style="font-size:20px; font-weight:700;
+                       font-family:monospace; color:var(--blue)">ECC</span>
+          <span id="active-algo-text"
+                style="font-size:12px; color:var(--muted)">
+            X25519-HKDF-SHA256-AES-256-GCM
+          </span>
+        </div>
+      </div>
+    </div>
+    <div style="text-align:right">
+      <div style="font-size:11px; color:var(--muted); margin-bottom:6px">
+        Pergantian Mode Terakhir
+      </div>
+      <div id="mode-history-inline"
+           style="font-size:12px; color:var(--text); font-family:monospace">
+        —
+      </div>
+    </div>
+  </div>
+
+  <!-- Charts + Info Kriptografi -->
+  <div class="grid-3">
+
+    <!-- Grafik Temperature & Humidity -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">📈 Live Sensor Chart</span>
+        <div id="mode-badge" class="mode-pill">—</div>
+      </div>
+      <div class="chart-wrap">
+        <canvas id="sensorChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Info Kriptografi -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">🔐 Info Kriptografi</span>
+      </div>
+      <div class="crypto-grid">
+        <div class="crypto-item">
+          <div class="crypto-label">Enkripsi Data</div>
+          <div class="crypto-value" style="color:var(--cyan)">AES-256-GCM</div>
+        </div>
+        <div class="crypto-item">
+          <div class="crypto-label">Auth Tag</div>
+          <div class="crypto-value" style="color:var(--green)">128-bit</div>
+        </div>
+        <div class="crypto-item">
+          <div class="crypto-label">RSA Key Size</div>
+          <div class="crypto-value" style="color:var(--purple)">2048-bit</div>
+        </div>
+        <div class="crypto-item">
+          <div class="crypto-label">ECC Curve</div>
+          <div class="crypto-value" style="color:var(--blue)">Curve25519</div>
+        </div>
+        <div class="crypto-item">
+          <div class="crypto-label">KDF</div>
+          <div class="crypto-value" style="color:var(--orange)">HKDF-SHA256</div>
+        </div>
+        <div class="crypto-item">
+          <div class="crypto-label">Nonce</div>
+          <div class="crypto-value" style="color:var(--yellow)">96-bit random</div>
+        </div>
+      </div>
+
+      <!-- Security Status -->
+      <div style="margin-top:16px">
+        <div class="card-title" style="margin-bottom:10px">🛡️ Security Status</div>
+        <div style="display:flex; flex-direction:column; gap:6px">
+          <div style="display:flex; justify-content:space-between; align-items:center">
+            <span style="font-size:12px; color:var(--muted)">IND-CPA</span>
+            <span class="badge badge-green">✓ Terpenuhi</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center">
+            <span style="font-size:12px; color:var(--muted)">IND-CCA</span>
+            <span class="badge badge-green">✓ Terpenuhi</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center">
+            <span style="font-size:12px; color:var(--muted)">Forward Secrecy</span>
+            <span id="fs-badge" class="badge badge-blue">ECC: ✓</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center">
+            <span style="font-size:12px; color:var(--muted)">Confidentiality</span>
+            <span class="badge badge-green">✓ AES-256</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Activity Log + pH Chart -->
+  <div class="grid-2">
+
+    <!-- Activity Log -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">📋 Activity Log</span>
+        <span class="badge badge-blue" id="log-count">0 entri</span>
+      </div>
+      <div class="log-container" id="activity-log">
+        <div class="empty-state">
+          <div class="emoji">📡</div>
+          <div>Menunggu data dari sensor...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Soil Chart -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">🌱 Soil Monitor</span>
+      </div>
+      <div class="chart-wrap">
+        <canvas id="soilChart"></canvas>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<footer>
+  Smart Agriculture Crypto System &nbsp;|&nbsp;
+  Kriptologi &nbsp;|&nbsp;
+  RSA-OAEP + X25519-HKDF + AES-256-GCM &nbsp;|&nbsp;
+  Auto-refresh setiap 2 detik
+</footer>
+
+<script>
+// ── Chart Setup ───────────────────────────────────────────────────
+
+const chartDefaults = {
+  responsive: true,
+  maintainAspectRatio: false,
+  animation: { duration: 300 },
+  plugins: { legend: { labels: { color: '#8892b0', font: { size: 11 } } } },
+  scales: {
+    x: { ticks: { color: '#8892b0', font: { size: 10 } }, grid: { color: '#2e3250' } },
+    y: { ticks: { color: '#8892b0', font: { size: 10 } }, grid: { color: '#2e3250' } }
+  }
+};
+
+// Sensor Chart (Temp + Humidity)
+const sensorCtx = document.getElementById('sensorChart').getContext('2d');
+const sensorChart = new Chart(sensorCtx, {
+  type: 'line',
+  data: {
+    labels: [],
+    datasets: [
+      {
+        label: 'Temperature (°C)',
+        data: [],
+        borderColor: '#f97316',
+        backgroundColor: 'rgba(249,115,22,0.1)',
+        borderWidth: 2,
+        pointRadius: 3,
+        tension: 0.4,
+        fill: true,
+      },
+      {
+        label: 'Humidity (%)',
+        data: [],
+        borderColor: '#06b6d4',
+        backgroundColor: 'rgba(6,182,212,0.1)',
+        borderWidth: 2,
+        pointRadius: 3,
+        tension: 0.4,
+        fill: true,
+      }
+    ]
+  },
+  options: { ...chartDefaults }
+});
+
+// Soil Chart (Moisture + pH)
+const soilCtx = document.getElementById('soilChart').getContext('2d');
+const soilChart = new Chart(soilCtx, {
+  type: 'line',
+  data: {
+    labels: [],
+    datasets: [
+      {
+        label: 'Soil Moisture (%)',
+        data: [],
+        borderColor: '#10b981',
+        backgroundColor: 'rgba(16,185,129,0.1)',
+        borderWidth: 2,
+        pointRadius: 3,
+        tension: 0.4,
+        fill: true,
+      },
+      {
+        label: 'Soil pH',
+        data: [],
+        borderColor: '#8b5cf6',
+        backgroundColor: 'rgba(139,92,246,0.1)',
+        borderWidth: 2,
+        pointRadius: 3,
+        tension: 0.4,
+        fill: true,
+        yAxisID: 'y2',
+      }
+    ]
+  },
+  options: {
+    ...chartDefaults,
+    scales: {
+      ...chartDefaults.scales,
+      y2: {
+        position: 'right',
+        ticks: { color: '#8892b0', font: { size: 10 } },
+        grid: { drawOnChartArea: false }
+      }
+    }
+  }
+});
+
+// ── Update Functions ─────────────────────────────────────────────
+
+function updateStats(data) {
+  const s = data.stats;
+  document.getElementById('stat-received').textContent = s.received;
+  document.getElementById('stat-stored').textContent   = s.stored_ciphertexts;
+  document.getElementById('stat-failed').textContent   = s.failed;
+  document.getElementById('stat-rejected').textContent = s.tampered_rejected;
+  document.getElementById('uptime').textContent        = s.uptime;
+}
+
+function updateAverages(avgs) {
+  document.getElementById('avg-temp').textContent     = avgs.temperature || '—';
+  document.getElementById('avg-humidity').textContent = avgs.humidity    || '—';
+  document.getElementById('avg-moisture').textContent = avgs.moisture    || '—';
+  document.getElementById('avg-ph').textContent       = avgs.ph          || '—';
+}
+
+function updateModeInfo(modes) {
+  const badge = document.getElementById('mode-badge');
+  const fsBadge = document.getElementById('fs-badge');
+  if (!modes || modes.length === 0) {
+    badge.textContent = '—';
+    return;
+  }
+  const modeStr = modes.join(' + ');
+  badge.innerHTML = `🔑 ${modeStr}`;
+
+  // Forward secrecy hanya ECC
+  if (modes.includes('ECC') && !modes.includes('RSA')) {
+    fsBadge.className = 'badge badge-green';
+    fsBadge.textContent = 'ECC: ✓';
+  } else if (modes.includes('RSA') && !modes.includes('ECC')) {
+    fsBadge.className = 'badge badge-yellow';
+    fsBadge.textContent = 'RSA: ✗';
+  } else {
+    fsBadge.className = 'badge badge-blue';
+    fsBadge.textContent = 'Mixed';
+  }
+}
+
+function updateCharts(chartData) {
+  if (!chartData || chartData.length === 0) return;
+
+  const labels   = chartData.map(p => p.time);
+  const temps    = chartData.map(p => p.temp);
+  const humids   = chartData.map(p => p.humidity);
+  const moisture = chartData.map(p => p.moisture);
+  const ph       = chartData.map(p => p.ph);
+
+  sensorChart.data.labels         = labels;
+  sensorChart.data.datasets[0].data = temps;
+  sensorChart.data.datasets[1].data = humids;
+  sensorChart.update();
+
+  soilChart.data.labels           = labels;
+  soilChart.data.datasets[0].data = moisture;
+  soilChart.data.datasets[1].data = ph;
+  soilChart.update();
+}
+
+function updateActivityLog(logs) {
+  const container = document.getElementById('activity-log');
+  document.getElementById('log-count').textContent = `${logs.length} entri`;
+
+  if (!logs || logs.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="emoji">📡</div>
+        <div>Menunggu data dari sensor...</div>
+      </div>`;
+    return;
+  }
+
+  container.innerHTML = logs.map(log => {
+    let statusBadge = '';
+    let detail = '';
+
+    if (log.status === 'ok') {
+      statusBadge = `<span class="badge badge-green">OK</span>`;
+      detail = `temp=${log.temp}°C hum=${log.humidity}%`;
+    } else if (log.status === 'rejected') {
+      statusBadge = `<span class="badge badge-red">DITOLAK</span>`;
+      detail = 'Tag autentikasi tidak valid!';
+    } else {
+      statusBadge = `<span class="badge badge-yellow">ERROR</span>`;
+      detail = log.reason || 'Unknown error';
+    }
+
+    const modeBadge = log.mode === 'RSA'
+      ? `<span class="badge badge-purple">RSA</span>`
+      : `<span class="badge badge-blue">ECC</span>`;
+
+    return `
+      <div class="log-item">
+        <span class="log-time">${log.time}</span>
+        <span class="log-seq">#${String(log.seq).padStart(5,'0')}</span>
+        ${modeBadge}
+        <span class="log-detail">${statusBadge} ${detail}</span>
+      </div>`;
+  }).join('');
+}
+
+// ── Mode Control ─────────────────────────────────────────────────
+
+async function setMode(mode) {
+  // Disable tombol sementara untuk mencegah double-click
+  document.getElementById('btn-rsa').disabled = true;
+  document.getElementById('btn-ecc').disabled = true;
+
+  try {
+    const res = await fetch('/api/mode', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mode })
+    });
+    const data = await res.json();
+
+    if (data.status === 'ok') {
+      updateModeButtons(data.active_mode);
+      updateModeBanner(data.active_mode);
+      console.log(`Mode berubah: ${data.previous} → ${data.active_mode}`);
+    }
+  } catch (err) {
+    console.error('Gagal ganti mode:', err);
+    alert('Gagal mengganti mode. Pastikan server aktif.');
+  } finally {
+    // Re-enable tombol
+    document.getElementById('btn-rsa').disabled = false;
+    document.getElementById('btn-ecc').disabled = false;
+  }
+}
+
+function updateModeButtons(mode) {
+  const btnRSA = document.getElementById('btn-rsa');
+  const btnECC = document.getElementById('btn-ecc');
+
+  // Reset semua
+  btnRSA.className = 'mode-btn';
+  btnECC.className = 'mode-btn';
+
+  // Aktifkan yang dipilih
+  if (mode === 'RSA') {
+    btnRSA.className = 'mode-btn active-rsa';
+  } else {
+    btnECC.className = 'mode-btn active-ecc';
+  }
+}
+
+function updateModeBanner(mode, history) {
+  const modeText = document.getElementById('active-mode-text');
+  const algoText = document.getElementById('active-algo-text');
+  const banner   = document.getElementById('mode-banner');
+
+  modeText.textContent = mode;
+
+  if (mode === 'RSA') {
+    modeText.style.color   = '#8b5cf6';
+    algoText.textContent   = 'RSA-OAEP-SHA256-AES-256-GCM';
+    banner.style.borderColor = 'rgba(139,92,246,0.4)';
+  } else {
+    modeText.style.color   = '#3b82f6';
+    algoText.textContent   = 'X25519-HKDF-SHA256-AES-256-GCM';
+    banner.style.borderColor = 'rgba(59,130,246,0.4)';
+  }
+
+  // Tampilkan riwayat pergantian mode
+  if (history && history.length > 0) {
+    const last = history[0];
+    if (last.changed) {
+      document.getElementById('mode-history-inline').innerHTML =
+        `<span style="color:var(--muted)">${last.time}</span>
+         &nbsp;
+         <span style="color:var(--red)">${last.from}</span>
+         <span class="arrow"> → </span>
+         <span style="color:var(--green)">${last.to}</span>`;
+    } else {
+      document.getElementById('mode-history-inline').textContent =
+        `Belum ada pergantian`;
+    }
+  }
+}
+
+// ── Fetch & Refresh ──────────────────────────────────────────────
+
+async function fetchDashboardData() {
+  try {
+    // Fetch dashboard data dan mode data secara bersamaan
+    const [dashRes, modeRes] = await Promise.all([
+      fetch('/api/dashboard-data'),
+      fetch('/api/mode')
+    ]);
+    const data     = await dashRes.json();
+    const modeData = await modeRes.json();
+
+    updateStats(data);
+    updateAverages(data.averages);
+    updateModeInfo(data.modes_used);
+    updateCharts(data.chart_data);
+    updateActivityLog(data.activity_log);
+
+    // Update mode toggle dan banner dari server
+    updateModeButtons(data.active_mode || modeData.mode);
+    updateModeBanner(data.active_mode  || modeData.mode, modeData.history);
+
+    // Server online
+    document.getElementById('server-dot').className           = 'dot';
+    document.getElementById('server-status-text').textContent = 'Server Aktif';
+
+  } catch (err) {
+    // Server offline
+    document.getElementById('server-dot').className           = 'dot offline';
+    document.getElementById('server-status-text').textContent = 'Server Mati';
+  }
+}
+
+// Fetch saat pertama kali load
+fetchDashboardData();
+
+// Auto-refresh setiap 2 detik
+setInterval(fetchDashboardData, 2000);
+</script>
+</body>
+</html>
+
