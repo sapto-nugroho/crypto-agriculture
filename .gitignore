@@ -1,3 +1,9 @@
+# Public key hasil fetch (auto-generate)
+gateway_keys/
+
+# Log plaintext sensor
+sensor_logs/
+
 # KUNCI PRIVAT — JANGAN PERNAH DI-COMMIT
 keys/
 
@@ -8,12 +14,6 @@ keys/
 # Storage runtime
 server_storage/
 gateway_buffer/
-
-# Public key hasil fetch (auto-generate)
-gateway_keys/
-
-# Log plaintext sensor
-sensor_logs/
 
 # Python
 __pycache__/
