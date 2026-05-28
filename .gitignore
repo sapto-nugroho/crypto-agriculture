@@ -9,6 +9,12 @@ keys/
 server_storage/
 gateway_buffer/
 
+# Public key hasil fetch (auto-generate)
+gateway_keys/
+
+# Log plaintext sensor
+sensor_logs/
+
 # Python
 __pycache__/
 *.pyc
