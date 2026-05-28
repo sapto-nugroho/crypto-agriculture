@@ -358,6 +358,28 @@
       border-top: 1px solid var(--border);
       margin-top: 8px;
     }
+
+    /* ── Responsive ──────────────────────────────────── */
+    @media (max-width: 1024px) {
+      .grid-4 { grid-template-columns: repeat(2, 1fr); }
+      .sensor-grid { grid-template-columns: repeat(2, 1fr); }
+      .grid-3 { grid-template-columns: 1fr; }
+      .grid-2 { grid-template-columns: 1fr; }
+      .crypto-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (max-width: 640px) {
+      .container { padding: 12px; }
+      .grid-4 { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+      .sensor-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+      .grid-3 { grid-template-columns: 1fr; }
+      .grid-2 { grid-template-columns: 1fr; }
+      .stat-value { font-size: 24px; }
+      .sensor-value { font-size: 22px; }
+      header { flex-direction: column; align-items: flex-start; gap: 10px; }
+      .header-right { flex-wrap: wrap; gap: 8px; }
+      #uptime { display: none; }
+    }
   </style>
 </head>
 <body>
