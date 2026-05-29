@@ -1,0 +1,2 @@
+timestamp,phase_online_sec,phase_downtime_sec,total_sent_gw,total_buffered,total_retry_sent,total_received_server,pending_buffer_akhir,data_hilang,data_gagal_server,data_rejected,availability_pct,drain_time_ms,zero_data_loss
+2026-05-29 22:14:52,30,30,7,5,5,3,0,0,0,0,100.0,6119.36,YES
