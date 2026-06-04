@@ -310,6 +310,93 @@ def receive_from_sensor():
         save_to_buffer(packet)
         return jsonify({"status": "buffered", "enc_ms": enc_ms})
 
+@app.route("/experiment/keygen", methods=["POST"])
+def experiment_keygen():
+    """
+    Endpoint KHUSUS untuk experiment_keygen.py.
+    Mengukur waktu setiap tahap key generation per mode.
+    TIDAK dipanggil saat operasi normal sensor → gateway → server.
+    TIDAK ada output print ke terminal gateway.
+    """
+    body = request.get_json()
+    mode = body.get("mode", "ECC").upper()
+ 
+    result = {"mode": mode}
+ 
+    if mode == "RSA":
+        # ── Tahap 1: Generate session key (AES-256, 32 byte random) ──
+        t0 = time.perf_counter()
+        session_key = os.urandom(32)
+        t1 = time.perf_counter()
+        result["session_key_gen_ms"] = round((t1 - t0) * 1000, 4)
+ 
+        # ── Tahap 2: Load public key RSA dari file ──
+        t0 = time.perf_counter()
+        rsa_pub = load_rsa_public_key()
+        t1 = time.perf_counter()
+        result["load_pubkey_ms"] = round((t1 - t0) * 1000, 4)
+ 
+        # ── Tahap 3: Enkripsi session key dengan RSA-OAEP ──
+        t0 = time.perf_counter()
+        rsa_pub.encrypt(
+            session_key,
+            padding.OAEP(
+                mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                algorithm=hashes.SHA256(),
+                label=None
+            )
+        )
+        t1 = time.perf_counter()
+        result["rsa_oaep_encrypt_ms"] = round((t1 - t0) * 1000, 4)
+ 
+        # ── Total key preparation RSA ──
+        result["total_key_prep_ms"] = round(
+            result["session_key_gen_ms"] +
+            result["load_pubkey_ms"] +
+            result["rsa_oaep_encrypt_ms"], 4
+        )
+ 
+    else:  # ECC
+        # ── Tahap 1: Generate ephemeral keypair X25519 ──
+        t0 = time.perf_counter()
+        ephemeral_private = X25519PrivateKey.generate()
+        ephemeral_public  = ephemeral_private.public_key()
+        t1 = time.perf_counter()
+        result["ephemeral_key_gen_ms"] = round((t1 - t0) * 1000, 4)
+ 
+        # ── Tahap 2: Load public key ECC dari file ──
+        t0 = time.perf_counter()
+        server_ecc_pub = load_ecc_public_key()
+        t1 = time.perf_counter()
+        result["load_pubkey_ms"] = round((t1 - t0) * 1000, 4)
+ 
+        # ── Tahap 3: ECDH — hitung shared secret ──
+        t0 = time.perf_counter()
+        shared_secret = ephemeral_private.exchange(server_ecc_pub)
+        t1 = time.perf_counter()
+        result["ecdh_ms"] = round((t1 - t0) * 1000, 4)
+ 
+        # ── Tahap 4: HKDF — turunkan session key ──
+        t0 = time.perf_counter()
+        hkdf = HKDF(
+            algorithm=hashes.SHA256(),
+            length=32,
+            salt=None,
+            info=b"smart-agriculture-v1"
+        )
+        hkdf.derive(shared_secret)
+        t1 = time.perf_counter()
+        result["hkdf_ms"] = round((t1 - t0) * 1000, 4)
+ 
+        # ── Total key preparation ECC ──
+        result["total_key_prep_ms"] = round(
+            result["ephemeral_key_gen_ms"] +
+            result["load_pubkey_ms"] +
+            result["ecdh_ms"] +
+            result["hkdf_ms"], 4
+        )
+ 
+    return jsonify(result)
 
 @app.route("/stats", methods=["GET"])
 def get_stats():
