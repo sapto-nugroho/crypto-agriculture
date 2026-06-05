@@ -4,6 +4,22 @@ Implementasi Hybrid Encryption: RSA-OAEP + AES-GCM dan X25519-HKDF + AES-GCM
 
 ---
 
+## Tampilan Dashboard
+
+![Smart Agriculture Crypto Monitor Dashboard](user-interface.jpeg)
+
+Dashboard berbasis web yang berjalan di server, dapat diakses melalui `http://localhost:5002/dashboard`. Fitur utama dashboard:
+
+- **Live Sensor Chart** — grafik real-time temperature dan humidity
+- **Soil Monitor** — grafik soil moisture dan soil pH
+- **Info Kriptografi** — menampilkan algoritma aktif (AES-256-GCM, RSA/ECC, HKDF-SHA256, nonce)
+- **Security Status** — status IND-CPA, IND-CCA, Forward Secrecy, dan Confidentiality
+- **Activity Log** — log pengiriman data per paket beserta mode enkripsi dan status dekripsi
+- **Mode Switch** — toggle antara mode RSA dan ECC secara langsung dari dashboard
+- **Indikator Server** — status server aktif/mati secara real-time
+
+---
+
 ## Arsitektur Sistem
 
 ```
@@ -36,6 +52,7 @@ smart_agriculture/
 ├── gateway.py            # Gateway: fetch key, enkripsi, buffer
 ├── sensor.py             # Sensor: generate & kirim data JSON
 ├── experiment.py         # Eksperimen kinerja end-to-end
+├── experiment_keygen.py  # Eksperimen waktu pembangkitan kunci
 ├── security_analysis.py  # Analisis IND-CPA & IND-CCA
 ├── decrypt_storage.py    # Dekripsi manual server_storage/
 ├── verify_integrity.py   # Cocokkan sensor_logs/ vs server_storage/
@@ -98,6 +115,7 @@ MODE = "ECC"   # atau "RSA"
 # Terminal 2: python gateway.py
 # Terminal 3:
 python experiment.py         # kinerja end-to-end (~10 menit)
+python experiment_keygen.py  # waktu pembangkitan kunci RSA & ECC (sensor tidak perlu aktif)
 python security_analysis.py  # IND-CPA & IND-CCA
 python verify_integrity.py   # cocokkan historis
 python decrypt_storage.py    # dekripsi manual semua file
